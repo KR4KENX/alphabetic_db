@@ -1,60 +1,54 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <algorithm>
 using namespace std;
-
-void bubbleSort(std::vector<string>& arr) {
-    int n = arr.size();
-    bool swapped;
-
-    for (int i = 0; i < n - 1; ++i) {
-        swapped = false;
-        for (int j = 0; j < n - i - 1; ++j) {
-            //konkretny wyraz
-            //iteracja po literach wyrazu
-            //jesli wyraz[i][0] > wyraz[i+1][0] zamien je miejscami
-            //jesli wyraz[i][0] = wyraz[i+1][0] petla
-            // g = max(len(wyraz[i, wyraz[i+1))
-            // jesli ktoras litera wyraz[i][g] > wyraz[i+1][g] zamien je miejscami
-            // jesli wyrazy sa sobie rowne, mniejszy powinien byc wczesniej
-            int g = 0;
-            int first_word_size = arr[i].size();
-            int second_Word_size = arr[i+1].size();
-            bool shoul_swap_if_equal = false;
-
-            if (first_word_size > second_Word_size) shoul_swap_if_equal = true;
-
-            while(g < max(first_word_size, second_Word_size)){
-                if ((g >= first_word_size || g >= second_Word_size) && shoul_swap_if_equal){
-
-                }
-            }
-            if (arr[j][0] > arr[j + 1][0]) {
-                string temp = arr[j];
-                arr[j] = arr[j + 1];
-                arr[j + 1] = temp;
-
-                swapped = true;
-            }
-        }
-
-        if (!swapped) {
-            break;
-        }
+bool biggerWord(string word1, string word2){
+    // Word 1 > Word 2 = return True, Word 2 >= Word 1 = return False
+    for(int i = 0; i < max(word1.size(), word2.size()); i++){
+        if (i >= word1.size()) return false;
+        if (i >= word2.size()) return true;
+        if (word1[i] < word2[i]) return false;
+        if (word1[i] > word2[i]) return true;
     }
+    return false;
 }
-void write(fstream& db, vector<string>& words){
+void write(ifstream& db, ofstream& temp_db, vector<string>& words){
+    db.clear();
+    db.seekg(0, ios::beg);
+    int w_iterator = 0;
     string line;
-    int line_counter = 0;
+    //TODO looping through words vector
     while(getline(db, line)){
-        cout << int(line[0]);
-        line_counter++;
+        if (w_iterator >= words.size()) break;
+        bool words_compare = biggerWord(words[w_iterator], line);
+   /*     if (words_compare){
+            string existing_text = line; // Zachowanie istniejącego tekstu
+            line = words[w_iterator]; // Dopisanie nowego tekstu
+            cout << existing_text << " : " << line;
+            db.seekp(db.tellg()); // Ustawienie wskaźnika zapisu na końcu aktualnej linii
+            db << line; // Zapisanie nowej linii
+            db << existing_text; // Dopisanie zachowanego istniejącego tekstu
+
+
+            w_iterator++;
+        } */
+        if (line == "abecadlo"){
+            // string temp = line;
+            // db.seekp(-line.length()-1, ios::cur);
+            // db << words[0] << '\n';
+            temp_db << words[0] << '\n';
+            temp_db << "abecadlo" << '\n';
+        } 
+        else{
+            temp_db << line << '\n';
+        } 
     }
 }
 
 int main(int argc, char* argv[]){
-    fstream ou(argv[2]);
-    // db for storing large amount of sentences
+    ofstream in("dbdata/temp");
+    ifstream ou(argv[2]);
     if(argc < 3){
         cout << "Operation not specified" << endl;
         return 1;
@@ -70,16 +64,15 @@ int main(int argc, char* argv[]){
         while(getline(cin, word)){
             words.push_back(word);
         }
-        bubbleSort(words);
-        cout << endl;
-        for(string word: words){
-            cout << word << endl;
-        }
-        //write(ou, words);
+        sort(words.begin(), words.end());
+        write(ou, in, words);
+        remove(argv[2]);
+        rename("dbdata/temp", argv[2]);
     }
     if(argv[1][0] == 'r'){
         cout << "Read from database ... " << endl;
     }
     ou.close();
+    in.close();
     return 0;
 }

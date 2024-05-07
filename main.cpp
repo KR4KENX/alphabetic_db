@@ -14,41 +14,32 @@ bool biggerWord(string word1, string word2){
     return false;
 }
 void write(ifstream& db, ofstream& temp_db, vector<string>& words){
-    db.clear();
-    db.seekg(0, ios::beg);
     int w_iterator = 0;
     string line;
-    //TODO looping through words vector
     while(getline(db, line)){
-        if (w_iterator >= words.size()) break;
-        bool words_compare = biggerWord(words[w_iterator], line);
-   /*     if (words_compare){
-            string existing_text = line; // Zachowanie istniejącego tekstu
-            line = words[w_iterator]; // Dopisanie nowego tekstu
-            cout << existing_text << " : " << line;
-            db.seekp(db.tellg()); // Ustawienie wskaźnika zapisu na końcu aktualnej linii
-            db << line; // Zapisanie nowej linii
-            db << existing_text; // Dopisanie zachowanego istniejącego tekstu
-
-
-            w_iterator++;
-        } */
-        if (line == "abecadlo"){
-            // string temp = line;
-            // db.seekp(-line.length()-1, ios::cur);
-            // db << words[0] << '\n';
-            temp_db << words[0] << '\n';
-            temp_db << "abecadlo" << '\n';
-        } 
-        else{
+        if (line.empty()) break;
+        if(w_iterator < words.size()){
+            bool words_compare = biggerWord(line, words[w_iterator]);
+            cout << words_compare << " : " << line << " : " << words[w_iterator] << endl;
+            while(w_iterator < words.size() && words_compare){
+                cout << "Inner loop";
+                temp_db << words[w_iterator] << '\n';
+                w_iterator++; 
+                if (w_iterator >= words.size()) break;
+                words_compare = biggerWord(line, words[w_iterator]);
+            }
+        }
             temp_db << line << '\n';
-        } 
+    }
+    while(w_iterator < words.size()){
+        temp_db << words[w_iterator] << '\n';
+        w_iterator++;
     }
 }
 
 int main(int argc, char* argv[]){
-    ofstream in("dbdata/temp");
-    ifstream ou(argv[2]);
+    ofstream ou("dbdata/temp");
+    ifstream in(argv[2]);
     if(argc < 3){
         cout << "Operation not specified" << endl;
         return 1;
@@ -65,14 +56,14 @@ int main(int argc, char* argv[]){
             words.push_back(word);
         }
         sort(words.begin(), words.end());
-        write(ou, in, words);
+        write(in, ou, words);
         remove(argv[2]);
         rename("dbdata/temp", argv[2]);
     }
     if(argv[1][0] == 'r'){
         cout << "Read from database ... " << endl;
     }
-    ou.close();
     in.close();
+    ou.close();
     return 0;
 }

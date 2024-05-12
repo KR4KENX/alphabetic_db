@@ -8,31 +8,38 @@ using namespace std;
 
 
 int main(int argc, char* argv[]){
-    fstream db(argv[2], ios::in | ios::out | ios::binary);
-    if(argc < 3){
+    if(argc < 4){
         cout << "Operation not specified" << endl;
         return 1;
     }
-    if(!db.good()){
+    string userSecret = argv[3];
+    if(argv[1][0] == 'c'){
+        fstream db(argv[2], ios::app | ios::binary);
+        if(!db.good()){
         cout << "Error with opening db file" << endl;
         return 1;
-    }
-    if(argv[1][0] == 'w'){
-        cout << "Write to database, add ENTER afer every sentence ... " << endl;
+        }
+        cout << "Create DB table, add words in your table - ENTER afer every sentence ... " << endl;
         vector<string> words;
         string word;
         while(getline(cin, word)){
             words.push_back(word);
         }
-        write(db, words);
+        writeTableToDB(db, words, userSecret);
+
+        db.close();
     }
     if(argv[1][0] == 'r'){
+        fstream db(argv[2], ios::in | ios::binary);
+        if(!db.good()){
+        cout << "Error with opening db file" << endl;
+        return 1;
+        }
         cout << "Read from database ... " << endl;
-        // string word;
-        // getline(cin, word);
-        // if (read(in, word)) cout << "Word already in DB" << endl;
-        // else cout << "Word not in DB" << endl;
+        vector<dbTable> allTables = readAllTablesFromDB(db);
+        db.close();
+
+        cout << allTables[1].words[1] << endl;
     }
-    db.close();
     return 0;
 }

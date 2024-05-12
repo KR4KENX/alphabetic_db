@@ -5,12 +5,19 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+#include <functional>
 using namespace std;
 
+struct dbTable {
+    string secret;
+    vector<string> words;
+};
+
 bool compareIgnoringCapital(char a, char b);
-void write(fstream& db, vector<string>& words);
-vector<string> read(fstream& db);
+void writeTableToDB(fstream& db, vector<string>& words, string userSecret);
+dbTable readTableFromDB(fstream& db);
 void sortWordsV(vector<string>& words);
+vector<dbTable> readAllTablesFromDB(fstream& db);
 
 
 

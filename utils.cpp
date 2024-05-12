@@ -4,8 +4,20 @@
 #include <vector>
 #include <algorithm>
 #include <string>
-#include <functional>
+#include <cryptopp/aes.h>
+#include <cryptopp/modes.h>
+#include <cryptopp/filters.h>
+#include <cryptopp/osrng.h>
 using namespace std;
+
+string xorEncryptDecrypt(const string& input, const string& key) {
+    string output = input;
+    for (size_t i = 0; i < input.size(); ++i) {
+        output[i] = input[i] ^ key[i % key.size()]; // Operacja XOR na pojedynczym znaku
+    }
+    return output;
+}
+
 bool compareIgnoringCapital(char a, char b) {
     return std::tolower(a) < std::tolower(b);
 }
@@ -19,40 +31,43 @@ void sortWordsV(vector<string>& words){
 void writeTableToDB(fstream& db, vector<string>& words, string userSecret){
     dbTable dbTable;
     sortWordsV(words);
+    string serializedWordsChain;
+    short wordsByteLenght;
+    for (const string& word : words) {
+        wordsByteLenght += word.size();
+        serializedWordsChain += to_string(word.size())+ word;
+    }
     dbTable.secret = hash<string>{}(userSecret);
-    dbTable.words = words;
 
-    // Zapisanie rozmiaru hasha
+    string encrypted = xorEncryptDecrypt(serializedWordsChain, dbTable.secret);
+
+    dbTable.words = encrypted;
+
     size_t hashSize = sizeof(dbTable.secret);
     db.write(reinterpret_cast<char*>(&hashSize), sizeof(hashSize));
-
-    // Zapisanie hasha
     db.write(reinterpret_cast<char*>(&dbTable.secret), hashSize);
 
-    // Zapisanie rozmiaru wektora
-    size_t vectorSize = words.size();
-    db.write(reinterpret_cast<char*>(&vectorSize), sizeof(vectorSize));
+    db.write(reinterpret_cast<char*>(&wordsByteLenght), sizeof(wordsByteLenght));
 
-    // Zapisanie każdego słowa
-    for (const string& word : words) {
-        size_t size=word.size();
-        db.write(reinterpret_cast<char*>(&size),sizeof(size));
-        db.write(&word[0], size);
-    }
+    size_t wordsSize = sizeof(dbTable.words);
+    db.write(reinterpret_cast<char*>(&wordsSize), sizeof(wordsSize));
+    db.write(reinterpret_cast<char*>(&dbTable.words), wordsSize);
 }
 
 dbTable readTableFromDB(fstream& db) {
     dbTable dbTable;
-
-    // Odczytanie sekretu
+   /* // Odczytanie sekretu
     size_t secretSize;
     db.read(reinterpret_cast<char*>(&secretSize), sizeof(secretSize));
     dbTable.secret.resize(secretSize);
+    cout << "Secret size: " << secretSize << endl;
     db.read(&dbTable.secret[0], secretSize);
 
     // Odczytanie rozmiaru wektora
     size_t vectorSize;
     db.read(reinterpret_cast<char*>(&vectorSize), sizeof(vectorSize));
+
+    cout << "Vector size: " << vectorSize << endl;
 
     // Odczytanie każdego słowa
     dbTable.words.resize(vectorSize);
@@ -61,15 +76,16 @@ dbTable readTableFromDB(fstream& db) {
         db.read(reinterpret_cast<char*>(&wordSize), sizeof(wordSize));
         dbTable.words[i].resize(wordSize);
         db.read(&dbTable.words[i][0], wordSize);
-    }
+    }*/
     return dbTable;
+    //przesuniecie o bajty działa licho, odczytaj hash secreta jeśli się nie zgadza po prostu nie zapisuj do tabeli db tylko czytaj
 }
 
 vector<dbTable> readAllTablesFromDB(fstream& db) {
     vector<dbTable> tables;
-
     while (true) {
-        if (db.tellg() == 225) break;
+        cout << "Next object: " << db.tellg() << endl;
+        if (db.tellg() >= 255) break;
         // Próba odczytania kolejnej struktury z pliku
         dbTable table = readTableFromDB(db);
         tables.push_back(table); // Dodanie odczytanej struktury do wektora

@@ -36,10 +36,9 @@ int main(int argc, char* argv[]){
         return 1;
         }
         cout << "Read from database ... " << endl;
-        vector<dbTable> allTables = readAllTablesFromDB(db);
-        db.close();
+        dbTable dbTable = readTableFromDB(db);
 
-        cout << allTables[1].words[1] << endl;
+        cout << dbTable.words << endl;
     }
     return 0;
 }

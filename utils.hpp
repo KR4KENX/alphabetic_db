@@ -5,14 +5,17 @@
 #include <vector>
 #include <algorithm>
 #include <string>
-#include <functional>
+#include <cryptopp/aes.h>
+#include <cryptopp/modes.h>
+#include <cryptopp/filters.h>
+#include <cryptopp/osrng.h>
 using namespace std;
 
 struct dbTable {
     string secret;
-    vector<string> words;
+    string words;
 };
-
+string xorEncryptDecrypt(const std::string &input, const std::string &key);
 bool compareIgnoringCapital(char a, char b);
 void writeTableToDB(fstream& db, vector<string>& words, string userSecret);
 dbTable readTableFromDB(fstream& db);

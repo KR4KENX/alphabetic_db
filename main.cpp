@@ -24,9 +24,6 @@ int main(int argc, char* argv[]){
         while(getline(cin, word)){
             words.push_back(word);
         }
-        sort(words.begin(), words.end(), [](const std::string& a, const std::string& b) {
-            return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end(), compareIgnoringCapital);
-        });
         write(db, words);
     }
     if(argv[1][0] == 'r'){

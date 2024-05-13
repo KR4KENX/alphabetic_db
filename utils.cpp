@@ -10,6 +10,12 @@
 #include <cryptopp/osrng.h>
 using namespace std;
 
+size_t hashSecret(string secret){
+    hash<string> hasher;
+    size_t hash = hasher(secret);
+    return hash;
+}
+
 string xorEncryptDecrypt(const string& input, const string& key) {
     string output = input;
     for (size_t i = 0; i < input.size(); ++i) {
@@ -28,68 +34,67 @@ void sortWordsV(vector<string>& words){
     });
 }
 
-void writeTableToDB(fstream& db, vector<string>& words, string userSecret){
-    dbTable dbTable;
-    sortWordsV(words);
+void writeTableToDB(fstream& db, dbTable& dbTable){
+    sortWordsV(dbTable.words);
     string serializedWordsChain;
     short wordsByteLenght;
-    for (const string& word : words) {
+    for (const string& word : dbTable.words) {
         wordsByteLenght += word.size();
         serializedWordsChain += to_string(word.size())+ word;
     }
-    dbTable.secret = hash<string>{}(userSecret);
+    size_t hash = hashSecret(dbTable.secret);
 
     string encrypted = xorEncryptDecrypt(serializedWordsChain, dbTable.secret);
 
-    dbTable.words = encrypted;
-
-    size_t hashSize = sizeof(dbTable.secret);
+    size_t hashSize = sizeof(hash);
     db.write(reinterpret_cast<char*>(&hashSize), sizeof(hashSize));
-    db.write(reinterpret_cast<char*>(&dbTable.secret), hashSize);
+    db.write(reinterpret_cast<char*>(&hash), hashSize);
 
     db.write(reinterpret_cast<char*>(&wordsByteLenght), sizeof(wordsByteLenght));
 
-    size_t wordsSize = sizeof(dbTable.words);
+    size_t wordsSize = encrypted.size();
     db.write(reinterpret_cast<char*>(&wordsSize), sizeof(wordsSize));
-    db.write(reinterpret_cast<char*>(&dbTable.words), wordsSize);
+    db.write(encrypted.c_str(), wordsSize);
 }
 
-dbTable readTableFromDB(fstream& db) {
+dbTable readTableFromDB(fstream& db, string secret) {
     dbTable dbTable;
-   /* // Odczytanie sekretu
-    size_t secretSize;
-    db.read(reinterpret_cast<char*>(&secretSize), sizeof(secretSize));
-    dbTable.secret.resize(secretSize);
-    cout << "Secret size: " << secretSize << endl;
-    db.read(&dbTable.secret[0], secretSize);
+    size_t hashSize;
+    size_t hash;
+    short hopSize;
+    db.read(reinterpret_cast<char*>(&hashSize), sizeof(hashSize));
+    db.read(reinterpret_cast<char*>(&hash), hashSize);
+    db.read(reinterpret_cast<char*>(&hopSize), sizeof(hopSize));
+    if(hashSecret(secret) != hash) {
+        db.seekg(hopSize, ios::cur);
+        return dbTable;
+    }
+    size_t wordsSize;
+    db.read(reinterpret_cast<char*>(&wordsSize), sizeof(wordsSize));
+   // Alokacja pamięci dla content
+    char* contentBuffer = new char[wordsSize];
+    db.read(contentBuffer, wordsSize);
+    
+    // Przypisanie wartości do zmiennej content
+    string content(contentBuffer, wordsSize);
+    
+    // Zwolnienie zaalokowanej pamięci
+    delete[] contentBuffer;
 
-    // Odczytanie rozmiaru wektora
-    size_t vectorSize;
-    db.read(reinterpret_cast<char*>(&vectorSize), sizeof(vectorSize));
-
-    cout << "Vector size: " << vectorSize << endl;
-
-    // Odczytanie każdego słowa
-    dbTable.words.resize(vectorSize);
-    for (size_t i = 0; i < vectorSize; ++i) {
-        size_t wordSize;
-        db.read(reinterpret_cast<char*>(&wordSize), sizeof(wordSize));
-        dbTable.words[i].resize(wordSize);
-        db.read(&dbTable.words[i][0], wordSize);
-    }*/
+    cout << xorEncryptDecrypt(content, secret) << endl;
+    
     return dbTable;
-    //przesuniecie o bajty działa licho, odczytaj hash secreta jeśli się nie zgadza po prostu nie zapisuj do tabeli db tylko czytaj
 }
 
 vector<dbTable> readAllTablesFromDB(fstream& db) {
     vector<dbTable> tables;
-    while (true) {
+   /* while (EDIT tellg() != ios::end) {
         cout << "Next object: " << db.tellg() << endl;
         if (db.tellg() >= 255) break;
         // Próba odczytania kolejnej struktury z pliku
-        dbTable table = readTableFromDB(db);
+        dbTable table = readTableFromDB(db, );
         tables.push_back(table); // Dodanie odczytanej struktury do wektora
-    }
+    }*/
 
     return tables;
 }

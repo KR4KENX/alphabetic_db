@@ -13,12 +13,13 @@ using namespace std;
 
 struct dbTable {
     string secret;
-    string words;
+    vector<string> words;
 };
+size_t hashSecret(string secret);
 string xorEncryptDecrypt(const std::string &input, const std::string &key);
 bool compareIgnoringCapital(char a, char b);
-void writeTableToDB(fstream& db, vector<string>& words, string userSecret);
-dbTable readTableFromDB(fstream& db);
+void writeTableToDB(fstream& db, dbTable& dbTable);
+dbTable readTableFromDB(fstream& db, string secret);
 void sortWordsV(vector<string>& words);
 vector<dbTable> readAllTablesFromDB(fstream& db);
 

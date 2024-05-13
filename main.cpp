@@ -25,7 +25,10 @@ int main(int argc, char* argv[]){
         while(getline(cin, word)){
             words.push_back(word);
         }
-        writeTableToDB(db, words, userSecret);
+        dbTable newTable;
+        newTable.secret = userSecret;
+        newTable.words = words;
+        writeTableToDB(db, newTable);
 
         db.close();
     }
@@ -36,9 +39,7 @@ int main(int argc, char* argv[]){
         return 1;
         }
         cout << "Read from database ... " << endl;
-        dbTable dbTable = readTableFromDB(db);
-
-        cout << dbTable.words << endl;
+        dbTable dbTable = readTableFromDB(db, userSecret);
     }
     return 0;
 }

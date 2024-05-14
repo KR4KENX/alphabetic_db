@@ -34,17 +34,41 @@ void sortWordsV(vector<string>& words){
     });
 }
 
-void writeTableToDB(fstream& db, dbTable& dbTable){
-    sortWordsV(dbTable.words);
+string serialize(vector<string> words){
     string serializedWordsChain;
-    short wordsByteLenght;
-    for (const string& word : dbTable.words) {
-        wordsByteLenght += word.size();
+    for (const string& word : words) {
         serializedWordsChain += to_string(word.size())+ word;
     }
-    size_t hash = hashSecret(dbTable.secret);
+    return serializedWordsChain;
+}
+
+vector<string> deserialize(string serializedWord){
+    vector<string> res;
+    int i = 0;
+    while (i < serializedWord.size()) {
+        string hop = "";
+        while (isdigit(serializedWord[i])){
+            hop.push_back(serializedWord[i]);
+            i++;
+        }
+        int ihop = atoi(hop.c_str());
+        string actual = serializedWord.substr(i, ihop);
+        res.push_back(actual);
+        i = i + ihop;
+    }
+    return res;
+}
+
+void writeTableToDB(fstream& db, dbTable& dbTable){
+    sortWordsV(dbTable.words);
+    string serializedWordsChain = serialize(dbTable.words);
 
     string encrypted = xorEncryptDecrypt(serializedWordsChain, dbTable.secret);
+    size_t wordsSize = encrypted.size();
+
+    short wordsByteLenght = encrypted.size() + sizeof(wordsSize);
+
+    size_t hash = hashSecret(dbTable.secret);
 
     size_t hashSize = sizeof(hash);
     db.write(reinterpret_cast<char*>(&hashSize), sizeof(hashSize));
@@ -52,7 +76,6 @@ void writeTableToDB(fstream& db, dbTable& dbTable){
 
     db.write(reinterpret_cast<char*>(&wordsByteLenght), sizeof(wordsByteLenght));
 
-    size_t wordsSize = encrypted.size();
     db.write(reinterpret_cast<char*>(&wordsSize), sizeof(wordsSize));
     db.write(encrypted.c_str(), wordsSize);
 }
@@ -63,7 +86,7 @@ dbTable readTableFromDB(fstream& db, string secret) {
     size_t hash;
     short hopSize;
     db.read(reinterpret_cast<char*>(&hashSize), sizeof(hashSize));
-    db.read(reinterpret_cast<char*>(&hash), hashSize);
+    db.read(reinterpret_cast<char*>(&hash), sizeof(hash));
     db.read(reinterpret_cast<char*>(&hopSize), sizeof(hopSize));
     if(hashSecret(secret) != hash) {
         db.seekg(hopSize, ios::cur);
@@ -71,59 +94,24 @@ dbTable readTableFromDB(fstream& db, string secret) {
     }
     size_t wordsSize;
     db.read(reinterpret_cast<char*>(&wordsSize), sizeof(wordsSize));
-   // Alokacja pamięci dla content
+   
     char* contentBuffer = new char[wordsSize];
     db.read(contentBuffer, wordsSize);
-    
-    // Przypisanie wartości do zmiennej content
+
     string content(contentBuffer, wordsSize);
     
-    // Zwolnienie zaalokowanej pamięci
     delete[] contentBuffer;
 
-    cout << xorEncryptDecrypt(content, secret) << endl;
+    dbTable.words = deserialize(xorEncryptDecrypt(content, secret));
     
     return dbTable;
 }
 
-vector<dbTable> readAllTablesFromDB(fstream& db) {
-    vector<dbTable> tables;
-   /* while (EDIT tellg() != ios::end) {
-        cout << "Next object: " << db.tellg() << endl;
-        if (db.tellg() >= 255) break;
-        // Próba odczytania kolejnej struktury z pliku
-        dbTable table = readTableFromDB(db, );
-        tables.push_back(table); // Dodanie odczytanej struktury do wektora
-    }*/
-
+vector<dbTable> readAllTablesFromDB(fstream& db, string secret) {
+    vector<dbTable> tables = {};
+   while (db.good()) {
+        dbTable table = readTableFromDB(db, secret);
+        if(table.words.size() > 0) tables.push_back(table);
+    }
     return tables;
 }
-
-// Currently - reading only one structure from file, words stored in pure text
-// TODO - loop through dbTable objects, hash words
-
-/*
-vector<string> read(fstream& db) {
-    vector<string> words;
-
-    db.seekg(0, ios::end);
-    size_t fileSize = db.tellg();
-    db.seekg(0, ios::beg);
-
-    if (fileSize == 0)
-        return words;
-
-    size_t size;
-    db.read(reinterpret_cast<char*>(&size), sizeof(size));
-
-    for (size_t i = 0; i < size; ++i) {
-        std::string str;
-        size_t size;
-        db.read(reinterpret_cast<char*>(&size), sizeof(size));
-        str.resize(size);
-        db.read(&str[0], size);
-        size_t str_size;
-        words.push_back(str);
-    }
-    return words;
-}*/

@@ -39,7 +39,10 @@ int main(int argc, char* argv[]){
         return 1;
         }
         cout << "Read from database ... " << endl;
-        dbTable dbTable = readTableFromDB(db, userSecret);
+        vector<dbTable> userTables = readAllTablesFromDB(db, userSecret);
+        if (userTables.size() > 0){
+            cout << userTables[0].words[1] << endl;
+        }
     }
     return 0;
 }

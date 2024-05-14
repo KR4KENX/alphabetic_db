@@ -21,7 +21,9 @@ bool compareIgnoringCapital(char a, char b);
 void writeTableToDB(fstream& db, dbTable& dbTable);
 dbTable readTableFromDB(fstream& db, string secret);
 void sortWordsV(vector<string>& words);
-vector<dbTable> readAllTablesFromDB(fstream& db);
+string serialize(vector<string> words);
+vector<string> deserialize(string serializedWord);
+vector<dbTable> readAllTablesFromDB(fstream& db, string secret);
 
 
 

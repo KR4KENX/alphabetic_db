@@ -64,9 +64,11 @@ void writeTableToDB(fstream& db, dbTable& dbTable){
     string serializedWordsChain = serialize(dbTable.words);
 
     string encrypted = xorEncryptDecrypt(serializedWordsChain, dbTable.secret);
+    string encryptedTableName = xorEncryptDecrypt(dbTable.tableName, dbTable.secret);
     size_t wordsSize = encrypted.size();
+    size_t tableNameSize = encryptedTableName.size();
 
-    short wordsByteLenght = encrypted.size() + sizeof(wordsSize);
+    short wordsByteLenght = wordsSize + sizeof(wordsSize) + tableNameSize;
 
     size_t hash = hashSecret(dbTable.secret);
 
@@ -75,6 +77,9 @@ void writeTableToDB(fstream& db, dbTable& dbTable){
     db.write(reinterpret_cast<char*>(&hash), hashSize);
 
     db.write(reinterpret_cast<char*>(&wordsByteLenght), sizeof(wordsByteLenght));
+
+    db.write(reinterpret_cast<char*>(&tableNameSize), sizeof(tableNameSize));
+    db.write(encryptedTableName.c_str(), tableNameSize);
 
     db.write(reinterpret_cast<char*>(&wordsSize), sizeof(wordsSize));
     db.write(encrypted.c_str(), wordsSize);
@@ -92,6 +97,18 @@ dbTable readTableFromDB(fstream& db, string secret) {
         db.seekg(hopSize, ios::cur);
         return dbTable;
     }
+    size_t tableNameSize;
+    db.read(reinterpret_cast<char*>(&tableNameSize), sizeof(tableNameSize));
+   
+    char* tableNameBuffer = new char[tableNameSize];
+    db.read(tableNameBuffer, tableNameSize);
+
+    string tableName(tableNameBuffer, tableNameSize);
+    
+    delete[] tableNameBuffer;
+
+    dbTable.tableName = xorEncryptDecrypt(tableName, secret);
+    //
     size_t wordsSize;
     db.read(reinterpret_cast<char*>(&wordsSize), sizeof(wordsSize));
    
@@ -109,9 +126,9 @@ dbTable readTableFromDB(fstream& db, string secret) {
 
 vector<dbTable> readAllTablesFromDB(fstream& db, string secret) {
     vector<dbTable> tables = {};
-   while (db.good()) {
-        dbTable table = readTableFromDB(db, secret);
-        if(table.words.size() > 0) tables.push_back(table);
-    }
+    while (db.good()) {
+            dbTable table = readTableFromDB(db, secret);
+            if(table.words.size() > 0) tables.push_back(table);
+        }
     return tables;
 }

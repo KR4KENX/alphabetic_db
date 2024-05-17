@@ -13,6 +13,7 @@ using namespace std;
 
 struct dbTable {
     string secret;
+    string tableName;
     vector<string> words;
 };
 size_t hashSecret(string secret);

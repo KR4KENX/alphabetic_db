@@ -8,7 +8,7 @@ using namespace std;
 
 
 int main(int argc, char* argv[]){
-    if(argc < 4){
+    if(argc < 5){
         cout << "Operation not specified" << endl;
         return 1;
     }
@@ -27,6 +27,7 @@ int main(int argc, char* argv[]){
         }
         dbTable newTable;
         newTable.secret = userSecret;
+        newTable.tableName = argv[4];
         newTable.words = words;
         writeTableToDB(db, newTable);
 
@@ -41,7 +42,12 @@ int main(int argc, char* argv[]){
         cout << "Read from database ... " << endl;
         vector<dbTable> userTables = readAllTablesFromDB(db, userSecret);
         if (userTables.size() > 0){
-            cout << userTables[0].words[1] << endl;
+            for (dbTable table: userTables){
+                cout << "---- " << table.tableName << " ----" << endl;
+                for (string word: table.words){
+                    cout << word << endl;
+                }
+            }
         }
     }
     return 0;

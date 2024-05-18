@@ -20,11 +20,12 @@ size_t hashSecret(string secret);
 string xorEncryptDecrypt(const std::string &input, const std::string &key);
 bool compareIgnoringCapital(char a, char b);
 void writeTableToDB(fstream& db, dbTable& dbTable);
-dbTable readTableFromDB(fstream& db, string secret);
+dbTable readTableFromDB(fstream& db, string secret, string searchTable);
 void sortWordsV(vector<string>& words);
 string serialize(vector<string> words);
 vector<string> deserialize(string serializedWord);
-vector<dbTable> readAllTablesFromDB(fstream& db, string secret);
+vector<dbTable> readAllTablesFromDB(fstream& db, string secret, string searchTable);
+int modifyTable(fstream& db, string secret, string modifyTableName, vector<string> wordsToAdd, vector<string> wordsToDrop);
 
 
 

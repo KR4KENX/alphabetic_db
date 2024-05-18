@@ -85,8 +85,8 @@ void writeTableToDB(fstream& db, dbTable& dbTable){
     db.write(encrypted.c_str(), wordsSize);
 }
 
-dbTable readTableFromDB(fstream& db, string secret) {
-    dbTable dbTable;
+dbTable readTableFromDB(fstream& db, string secret, string searchTable) {
+    dbTable Table;
     size_t hashSize;
     size_t hash;
     short hopSize;
@@ -95,7 +95,7 @@ dbTable readTableFromDB(fstream& db, string secret) {
     db.read(reinterpret_cast<char*>(&hopSize), sizeof(hopSize));
     if(hashSecret(secret) != hash) {
         db.seekg(hopSize, ios::cur);
-        return dbTable;
+        return Table;
     }
     size_t tableNameSize;
     db.read(reinterpret_cast<char*>(&tableNameSize), sizeof(tableNameSize));
@@ -107,7 +107,13 @@ dbTable readTableFromDB(fstream& db, string secret) {
     
     delete[] tableNameBuffer;
 
-    dbTable.tableName = xorEncryptDecrypt(tableName, secret);
+    Table.tableName = xorEncryptDecrypt(tableName, secret);
+
+    if(Table.tableName != searchTable && searchTable != "."){
+        db.seekg((hopSize - tableNameSize), ios::cur);
+        dbTable emptyTable;
+        return emptyTable;        
+    }
     //
     size_t wordsSize;
     db.read(reinterpret_cast<char*>(&wordsSize), sizeof(wordsSize));
@@ -119,16 +125,39 @@ dbTable readTableFromDB(fstream& db, string secret) {
     
     delete[] contentBuffer;
 
-    dbTable.words = deserialize(xorEncryptDecrypt(content, secret));
+    Table.words = deserialize(xorEncryptDecrypt(content, secret));
     
-    return dbTable;
+    return Table;
 }
 
-vector<dbTable> readAllTablesFromDB(fstream& db, string secret) {
+dbTable readTableFromDBSafe(fstream& db){
+    
+}
+
+vector<dbTable> readAllTablesFromDB(fstream& db, string secret, string searchTable) {
     vector<dbTable> tables = {};
     while (db.good()) {
-            dbTable table = readTableFromDB(db, secret);
+            dbTable table = readTableFromDB(db, secret, searchTable);
             if(table.words.size() > 0) tables.push_back(table);
         }
     return tables;
+}
+
+int modifyTable(fstream& db, string secret, string modifyTableName, vector<string> wordsToAdd, vector<string> wordsToDrop){
+    dbTable tableToModify;
+    vector<dbTable> temp = readAllTablesFromDB(db, secret, modifyTableName);
+    if(temp.size() == 0){
+        return 1;
+    }
+    tableToModify = temp[0];
+    for (const string& word : wordsToDrop) {
+    tableToModify.words.erase(
+        std::remove(tableToModify.words.begin(), tableToModify.words.end(), word),
+        tableToModify.words.end()
+    );
+    }
+    for(const string& word : wordsToAdd){
+        tableToModify.words.push_back(word);
+    }
+    return 0;
 }
